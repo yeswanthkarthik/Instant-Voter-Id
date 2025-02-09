@@ -1,0 +1,46 @@
+image: maven:3.9.4-eclipse-temurin-17
+
+stages:
+  - build
+  - test
+  - deploy
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when : always
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when : always
+    - when : never
+
+cache:
+  key: maven-cache
+  paths:
+    - .m2/repository
+  policy: pull-push
+
+variables:
+  MAVEN_CLI_OPTS: "-B -Dmaven.test.failure.ignore=true"
+
+build:
+  stage: build
+  script:
+    - echo "Starting build process..."
+    - mvn clean install $MAVEN_CLI_OPTS
+  artifacts:
+    paths:
+      - target/*.jar
+    expire_in: 1 week
+
+test:
+  stage: test
+  script:
+    - echo "Running tests..."
+    - mvn test $MAVEN_CLI_OPTS
+
+deploy:
+  stage: deploy
+  script:
+    - echo "Deploying the application..."
+  only:
+    - main
